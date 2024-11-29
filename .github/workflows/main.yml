@@ -1,44 +1,18 @@
-name: Test Environment Variables
-
-on:
-  push:
-    branches:
-      - prod  # Trigger on push to the main branch
-
+name: GitHub Actions Demo
+run-name: ${{ github.actor }} is testing out GitHub Actions 🚀
+on: [push]
 jobs:
-  test-env-vars:
+  Explore-GitHub-Actions:
     runs-on: ubuntu-latest
-
     steps:
-      # Step 1: Checkout repository
-      - name: Checkout code
-        uses: actions/checkout@v3
-
-      # Step 2: Print environment variables
-      - name: Print Environment Variables
-        env:
-          DATA_URL: ${{ vars.DATA_URL }}
-          IMAGE_URL: ${{ vars.IMAGE_URL }}
-          CHART_URL: ${{ vars.CHART_URL }}
+      - run: echo "🎉 The job was automatically triggered by a ${{ github.event_name }} event."
+      - run: echo "🐧 This job is now running on a ${{ runner.os }} server hosted by GitHub!"
+      - run: echo "🔎 The name of your branch is ${{ github.ref }} and your repository is ${{ github.repository }}."
+      - name: Check out repository code
+        uses: actions/checkout@v4
+      - run: echo "💡 The ${{ github.repository }} repository has been cloned to the runner."
+      - run: echo "🖥️ The workflow is now ready to test your code on the runner."
+      - name: List files in the repository
         run: |
-          echo "DATA_URL: $DATA_URL"
-          echo "IMAGE_URL: $IMAGE_URL"
-          echo "CHART_URL: $CHART_URL"
-
-      # Step 3: Verify environment variables are set
-      - name: Verify Variables
-        env:
-          DATA_URL: ${{ vars.DATA_URL }}
-          IMAGE_URL: ${{ vars.IMAGE_URL }}
-          CHART_URL: ${{ vars.CHART_URL }}
-        run: |
-          if [ -z "$DATA_URL" ]; then
-            echo "DATA_URL is not set!" && exit 1
-          fi
-          if [ -z "$IMAGE_URL" ]; then
-            echo "IMAGE_URL is not set!" && exit 1
-          fi
-          if [ -z "$CHART_URL" ]; then
-            echo "CHART_URL is not set!" && exit 1
-          fi
-          echo "All environment variables are set!"
+          ls ${{ github.workspace }}
+      - run: echo "🍏 This job's status is ${{ job.status }}."
