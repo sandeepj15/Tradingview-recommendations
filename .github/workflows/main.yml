@@ -24,7 +24,12 @@ jobs:
         run: |
           docker save -o streamlit-app.tar streamlit-app
 
-      # Step 4: Copy Docker tarball to the VPS server
+      # Step 4: Adjust permissions for the tarball
+      - name: Adjust permissions
+        run: |
+          chmod 644 streamlit-app.tar
+
+      # Step 5: Copy Docker tarball to the VPS server
       - name: Copy Docker tarball to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -34,9 +39,9 @@ jobs:
           source: streamlit-app.tar
           target: /home/${{ secrets.SERVER_USERNAME }}/streamlit-app.tar
 
-      # Step 5: Deploy Docker container on the VPS server
+      # Step 6: Deploy Docker container on the VPS server
       - name: Deploy Docker container
-        uses: appleboy/ssh-action@v0.1.8  # Correct version
+        uses: appleboy/ssh-action@v0.1.8
         with:
           host: ${{ secrets.SERVER_IP }}
           username: ${{ secrets.SERVER_USERNAME }}
