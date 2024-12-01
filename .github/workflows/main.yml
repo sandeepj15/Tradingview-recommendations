@@ -29,7 +29,7 @@ jobs:
         run: |
           chmod 644 streamlit-app.tar
 
-      # Step 5: Copy Docker tarball to the VPS server
+      # Step 5: Copy Docker tarball to the VPS server with debugging enabled
       - name: Copy Docker tarball to server
         uses: appleboy/scp-action@v0.1.7
         with:
@@ -38,8 +38,9 @@ jobs:
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           source: streamlit-app.tar
           target: /home/${{ secrets.SERVER_USERNAME }}/streamlit-app.tar
+          debug: true  # Enable debugging to capture more detailed logs
 
-      # Step 6: Deploy Docker container on the VPS server
+      # Step 6: Deploy Docker container on the VPS server with SSH debugging enabled
       - name: Deploy Docker container
         uses: appleboy/ssh-action@v0.1.8
         with:
@@ -47,6 +48,8 @@ jobs:
           username: ${{ secrets.SERVER_USERNAME }}
           key: ${{ secrets.SSH_PRIVATE_KEY }}
           script: |
+            # Debugging SSH connection
+            echo "Running deployment on server..."
             docker load < /home/${{ secrets.SERVER_USERNAME }}/streamlit-app.tar
             docker stop streamlit-app || true
             docker rm streamlit-app || true
@@ -56,3 +59,4 @@ jobs:
               -e CHART_URL=${{ secrets.CHART_URL }} \
               -p 8501:8501 \
               --name streamlit-app streamlit-app
+          debug: true  # Enable debugging to capture detailed SSH logs
