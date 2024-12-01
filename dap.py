@@ -63,6 +63,7 @@ if option == "TradingView Recommendation (Crypto)":
 
         k = [pairs[i].upper() for i in range(len(pairs))]
         finaldf = process_crypto_data(analysis, usd_pair, k, include_volume=False)
+        finaldf = finaldf[finaldf['Recommendation'].isin(['STRONG_BUY', 'STRONG_SELL'])]
         logger.info("Processed crypto data successfully.")
 
         st.write("Time Frame: ", Time_frame)
