@@ -67,7 +67,7 @@ def process_crypto_data(analysis, usd_pair, keys, include_volume=False):
             coin_data = {
                 "Coin": usd_pair[i]['coin'][:-4],
                 "Recommendation": analysis[keys[i]].summary['RECOMMENDATION'],
-                "Price_USDT": float(usd_pair[i]['price']),
+                "Price_USDT": usd_pair[i]['price'],
                 "EMA20": analysis[keys[i]].indicators['EMA20'],
                 "RSI_14": analysis[keys[i]].indicators['RSI'],
                 "%_deviation_EMA20": round(
