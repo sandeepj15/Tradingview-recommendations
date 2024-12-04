@@ -41,15 +41,24 @@ jobs:
           script: |
             # Log in to Docker Hub on the remote server
             echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
-            # Pull the image from Docker Hub
+            
+            # Pull the new image from Docker Hub
             docker pull ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
-            # Stop and remove any existing container
-            docker stop streamlit-app || true
-            docker rm streamlit-app || true
-            # Run the container
-            docker run -d \
-              -e DATA_URL=${{ secrets.DATA_URL }} \
-              -e IMAGE_URL=${{ secrets.IMAGE_URL }} \
-              -e CHART_URL=${{ secrets.CHART_URL }} \
-              -p 8501:8501 \
-              --name streamlit-app ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
+
+            # Check if the container is running
+            if [[ "$(docker ps -q -f name=streamlit-app)" ]]; then
+              echo "Container is already running. Restarting it with the new image..."
+              # Stop the container without removing it
+              docker stop streamlit-app
+              # Restart the container with the new image
+              docker container start streamlit-app
+            else
+              echo "No existing container found. Deploying a new container..."
+              # Run a new container if it doesn't exist
+              docker run -d \
+                -e DATA_URL=${{ secrets.DATA_URL }} \
+                -e IMAGE_URL=${{ secrets.IMAGE_URL }} \
+                -e CHART_URL=${{ secrets.CHART_URL }} \
+                -p 8501:8501 \
+                --name streamlit-app ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
+            fi
