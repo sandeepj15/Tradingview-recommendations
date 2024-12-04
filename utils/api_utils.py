@@ -1,10 +1,15 @@
-import json
-import urllib.request as request
+import aiohttp
+import asyncio
+import orjson
 import streamlit as st
 from dotenv import load_dotenv
 import os
 
 load_dotenv()
+
+data_url = os.getenv("DATA_URL")
+image_url = os.getenv("IMAGE_URL")
+chart_url = os.getenv("CHART_URL")
 
 equity = ["AARTIIND", "ABB", "ABBOTINDIA", "ABCAPITAL", "ABFRL", "ACC", "ADANIENT", "ADANIPORTS", "ALKEM",
           "AMARAJABAT", "AMBUJACEM", "APOLLOHOSP", "APOLLOTYRE",
@@ -32,36 +37,34 @@ equity = ["AARTIIND", "ABB", "ABBOTINDIA", "ABCAPITAL", "ABFRL", "ACC", "ADANIEN
           "ULTRACEMCO", "UPL", "VEDL", "VOLTAS", "WHIRLPOOL", "WIPRO", "ZEEL", "ZYDUSLIFE"]
 
 
-@st.cache_data(ttl=60)
-def get_binance_data():
-    data_url = os.getenv("DATA_URL")
-    with request.urlopen(data_url) as response:
-        source = response.read()
-        data = json.loads(source)
-    usd_pairs = []
-    for i in range(len(data['data'])):
-        coin_usd = {}
-        if data['data'][i]['q'] == "USDT":
-            coin_usd['coin'] = data['data'][i]['s']
-            coin_usd['price'] = float(data['data'][i]['c'])
-            usd_pairs.append(coin_usd)
+async def get_binance_data_async():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(data_url) as response:
+            source = await response.read()
+            data = orjson.loads(source)
+    usd_pairs = [
+        {'coin': item['s'], 'price': float(item['c'])}
+        for item in data['data'] if item['q'] == "USDT"
+    ]
     return usd_pairs
 
+@st.cache_data(ttl=90)
+def get_binance_data():
+    return asyncio.run(get_binance_data_async())
+
+
+async def get_dog_image_async():
+    async with aiohttp.ClientSession() as session:
+        async with session.get(image_url) as response:
+            source = await response.read()
+            return orjson.loads(source)['message']
 
 def get_dog_image():
-    image_url = os.getenv("IMAGE_URL")
-    with request.urlopen(image_url) as response:
-        return json.loads(response.read())['message']
-
+    return asyncio.run(get_dog_image_async())
 
 def color_negative_red(value):
-    if value < 0:
-        color = 'red'
-    elif value > 0:
-        color = 'green'
-    else:
-        color = 'black'
-    return 'color: %s' % color
+    color = 'red' if value < 0 else 'green' if value > 0 else 'black'
+    return f'color: {color}'
 
 def select_time_frame(label="Select a time frame", options=None, default="1h"):
     if options is None:
@@ -69,5 +72,4 @@ def select_time_frame(label="Select a time frame", options=None, default="1h"):
     return st.radio(label, options, index=options.index(default))
 
 def get_chart(symbol):
-    chart_url = os.getenv("CHART_URL")
     return f"{chart_url}{symbol}"
