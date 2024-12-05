@@ -1,5 +1,8 @@
 # Tradingview-recommendations
-Check out:- https://sandeepj15-tradingview-recommendations-dap-9sxsc3.streamlitapp.com/
+Check out the App:- http://103.241.65.47:8501/
+
+## This app is auto deployed through GitHub actions CICD pipeline whenever the code is merged to the PROD branch and it runs on a remote server 
+
 
 # To run this project inside a Docker Container run the commands:
 
