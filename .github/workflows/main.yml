@@ -3,68 +3,36 @@ name: Deploy Streamlit App
 on:
   push:
     branches:
-      - prod  # Trigger deployment on pushes to the prod branch
+      - prod
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      # Step 1: Checkout the repository
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # Step 2: Log in to Docker Hub
-      - name: Log in to Docker Hub
+      - name: Log in to GitHub Container Registry
         uses: docker/login-action@v2
         with:
-          username: ${{ secrets.DOCKER_USERNAME }}
-          password: ${{ secrets.DOCKER_PASSWORD }}
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
 
-      # Step 3: Set up Docker Buildx (optional, for advanced caching)
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v2
 
-      # Step 4: Build Docker image with cache
-      - name: Build Docker image
+      - name: Build and Push Docker image
         run: |
-          docker buildx build --cache-from=type=registry,ref=${{ secrets.DOCKER_USERNAME }}/streamlit-app:cache --cache-to=type=registry,ref=${{ secrets.DOCKER_USERNAME }}/streamlit-app:cache,mode=max -t ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest --load .
-          docker images  # List images to ensure the image is built and tagged correctly
+          IMAGE_NAME=ghcr.io/${{ github.repository }}/app:latest
+          echo "Using image: $IMAGE_NAME"
+          docker buildx build \
+            -t $IMAGE_NAME \
+            --push .
 
-      # Step 5: Push Docker image to Docker Hub
-      - name: Push Docker image to Docker Hub
+      - name: Trigger Watchtower
         run: |
-          docker images  # List images to ensure the image exists locally before pushing
-          docker push ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
-
-      # Step 6: Deploy Docker container on the VPS server
-      - name: Deploy Docker container
-        uses: appleboy/ssh-action@v0.1.8
-        with:
-          host: ${{ secrets.SERVER_IP }}
-          username: ${{ secrets.SERVER_USERNAME }}
-          key: ${{ secrets.SSH_PRIVATE_KEY }}
-          script: |
-            # Log in to Docker Hub on the remote server
-            echo ${{ secrets.DOCKER_PASSWORD }} | docker login --username ${{ secrets.DOCKER_USERNAME }} --password-stdin
-
-            # Pull the new image from Docker Hub
-            docker pull ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
-
-            # Check if the container is running
-            if [[ "$(docker ps -q -f name=streamlit-app)" ]]; then
-              echo "Container is already running. Restarting it with the new image..."
-              # Stop the container without removing it
-              docker stop streamlit-app
-              # Restart the container with the new image
-              docker container start streamlit-app
-            else
-              echo "No existing container found. Deploying a new container..."
-              # Run a new container if it doesn't exist
-              docker run -d \
-                -e DATA_URL=${{ secrets.DATA_URL }} \
-                -e IMAGE_URL=${{ secrets.IMAGE_URL }} \
-                -e CHART_URL=${{ secrets.CHART_URL }} \
-                -p 8501:8501 \
-                --name streamlit-app ${{ secrets.DOCKER_USERNAME }}/streamlit-app:latest
-            fi
+          curl -X POST \
+            -H "Authorization: Bearer ${{ secrets.WATCHTOWER_TOKEN }}" \
+            http://${{ secrets.SERVER_IP }}:8080/v1/update
